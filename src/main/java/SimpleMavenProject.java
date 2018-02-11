@@ -17,31 +17,15 @@
  * under the License.
  */
 
-import com.google.inject.AbstractModule;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.RepositoryUtils;
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.MavenArtifactRepository;
-import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.Repository;
 import org.apache.maven.project.*;
-import org.apache.maven.repository.ArtifactDoesNotExistException;
-import org.apache.maven.repository.ArtifactTransferFailedException;
-import org.apache.maven.repository.ArtifactTransferListener;
-import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.apache.maven.settings.Mirror;
-import org.apache.maven.settings.Proxy;
-import org.apache.maven.settings.Server;
 import org.codehaus.plexus.ContainerConfiguration;
 import org.codehaus.plexus.DefaultContainerConfiguration;
 import org.codehaus.plexus.DefaultPlexusContainer;
@@ -51,7 +35,6 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.eclipse.aether.ConfigurationProperties;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.internal.impl.DefaultRepositorySystem;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
@@ -61,7 +44,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
-import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,29 +119,41 @@ public class SimpleMavenProject {
       });
       ast.accept(new ASTVisitor() {
         String indent = "  ";
-        
+        Stack<ASTNode> stack = new Stack<>();
+  
         @Override
         public void preVisit(final ASTNode node) {
-          logger.info(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
           indent += "  ";
+          if (node instanceof Name) {
+            Name name = (Name) node;
+            IBinding binding = name.resolveBinding();
+            String bindingString;
+            if (binding == null) {
+              bindingString = "???";
+            }
+            else if (binding instanceof ITypeBinding) {
+              bindingString = ((ITypeBinding) binding).getBinaryName();
+            }
+            else {
+              bindingString = binding.toString();
+            }
+            logger.info(String.format("  %s%s%s = %s (%s: %s)", node.getStartPosition(), indent,
+              node.getClass().getSimpleName(), name.getFullyQualifiedName(),
+              null == binding ? null : binding.getClass().getSimpleName(), bindingString));
+          }
+          else {
+            logger.info(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
+          }
+          stack.push(node);
         }
-        
+  
         @Override
         public void postVisit(final ASTNode node) {
+          if (node != stack.pop()) throw new IllegalStateException();
           if (indent.length() < 2) throw new IllegalStateException();
-          indent = indent.substring(indent.length() - 2);
+          indent = indent.substring(2);
         }
-        
-        @Override
-        public boolean visit(final MethodDeclaration node) {
-          IMethodBinding iMethodBinding = node.resolveBinding();
-          Javadoc javadoc = node.getJavadoc();
-          logger.info(String.format("  Method %s::%s\n    %s",
-            null == iMethodBinding ? null : iMethodBinding.getDeclaringClass().getQualifiedName(),
-            null == iMethodBinding ? null : iMethodBinding.getName(),
-            node.toString().replaceAll("\n", "\n    ").trim()));
-          return super.visit(node);
-        }
+  
       });
       
     });
@@ -251,138 +245,7 @@ public class SimpleMavenProject {
     ContainerConfiguration configuration = new DefaultContainerConfiguration()
       .setClassWorld(classWorld).setRealm(classWorld.getClassRealm(null))
       .setClassPathScanning("index").setAutoWiring(true).setJSR250Lifecycle(true).setName("maven");
-    return new DefaultPlexusContainer(configuration, new SimpleModule(repository));
+    return new DefaultPlexusContainer(configuration, new BasicModule(repository));
   }
   
-  private static class SimpleModule extends AbstractModule {
-    private final ArtifactRepository repository;
-    
-    private SimpleModule(final ArtifactRepository repository) {this.repository = repository;}
-    
-    protected void configure() {
-      this.bind(ILoggerFactory.class).toInstance(LoggerFactory.getILoggerFactory());
-      this.bind(RepositorySystem.class).toInstance(new RepositorySystem() {
-        @Override
-        public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String packaging) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String scope, final String type) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public Artifact createProjectArtifact(final String groupId, final String artifactId, final String version) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public Artifact createArtifactWithClassifier(final String groupId, final String artifactId, final String version, final String type, final String classifier) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public Artifact createPluginArtifact(final Plugin plugin) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public Artifact createDependencyArtifact(final Dependency dependency) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public ArtifactRepository buildArtifactRepository(final Repository r) throws InvalidRepositoryException {
-          return repository;
-        }
-        
-        @Override
-        public ArtifactRepository createDefaultRemoteRepository() throws InvalidRepositoryException {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public ArtifactRepository createDefaultLocalRepository() throws InvalidRepositoryException {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public ArtifactRepository createLocalRepository(final File localRepository) throws InvalidRepositoryException {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public ArtifactRepository createArtifactRepository(final String id, final String url1, final ArtifactRepositoryLayout repositoryLayout, final ArtifactRepositoryPolicy snapshots, final ArtifactRepositoryPolicy releases) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public List<ArtifactRepository> getEffectiveRepositories(final List<ArtifactRepository> repositories) {
-          return Arrays.asList(repository);
-        }
-        
-        @Override
-        public Mirror getMirror(final ArtifactRepository repository1, final List<Mirror> mirrors) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public void injectMirror(final List<ArtifactRepository> repositories, final List<Mirror> mirrors) {
-        }
-        
-        @Override
-        public void injectProxy(final List<ArtifactRepository> repositories, final List<Proxy> proxies) {
-        
-        }
-        
-        @Override
-        public void injectAuthentication(final List<ArtifactRepository> repositories, final List<Server> servers) {
-        
-        }
-        
-        @Override
-        public void injectMirror(final RepositorySystemSession session, final List<ArtifactRepository> repositories) {
-        
-        }
-        
-        @Override
-        public void injectProxy(final RepositorySystemSession session, final List<ArtifactRepository> repositories) {
-        
-        }
-        
-        @Override
-        public void injectAuthentication(final RepositorySystemSession session, final List<ArtifactRepository> repositories) {
-        
-        }
-        
-        @Override
-        public ArtifactResolutionResult resolve(final ArtifactResolutionRequest request) {
-          if (0 < 1) throw new RuntimeException("Not Implemented");
-          return null;
-        }
-        
-        @Override
-        public void publish(final ArtifactRepository repository1, final File source, final String remotePath, final ArtifactTransferListener transferListener) throws ArtifactTransferFailedException {
-        
-        }
-        
-        @Override
-        public void retrieve(final ArtifactRepository repository1, final File destination, final String remotePath, final ArtifactTransferListener transferListener) throws ArtifactTransferFailedException, ArtifactDoesNotExistException {
-        
-        }
-      });
-    }
-  }
 }

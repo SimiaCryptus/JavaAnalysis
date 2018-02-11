@@ -24,10 +24,11 @@ import org.eclipse.jdt.core.dom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.Stack;
 
 /**
  * Analyzes a project based on class member dependencies
@@ -70,99 +71,141 @@ public class DependencyScanner extends SimpleMavenProject {
         logger.info("  MSG: " + problem.getMessage());
       });
       ast.accept(new ASTVisitor() {
+        public boolean useJavaDoc = false;
         String indent = "  ";
-        MethodDeclaration currentMethod;
-        FieldDeclaration currentField;
+        Stack<ASTNode> stack = new Stack<>();
+        String currentCodeContext = "";
         
         @Override
         public void preVisit(final ASTNode node) {
           indent += "  ";
-          logger.info(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
+          if (node instanceof Name) {
+            Name name = (Name) node;
+            IBinding binding = name.resolveBinding();
+            String bindingString;
+            if (binding == null) {
+              bindingString = "???";
+            }
+            else if (binding instanceof ITypeBinding) {
+              bindingString = ((ITypeBinding) binding).getBinaryName();
+            }
+            else {
+              bindingString = binding.toString();
+            }
+            logger.debug(String.format("  %s%s%s = %s (%s: %s)", node.getStartPosition(), indent,
+              node.getClass().getSimpleName(), name.getFullyQualifiedName(),
+              null == binding ? null : binding.getClass().getSimpleName(), bindingString));
+          }
+          else {
+            logger.debug(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
+          }
+          stack.push(node);
         }
-        
+  
         @Override
         public void postVisit(final ASTNode node) {
+          if (node != stack.pop()) throw new IllegalStateException();
           if (indent.length() < 2) throw new IllegalStateException();
-          indent = indent.substring(indent.length() - 2);
+          indent = indent.substring(2);
         }
-        
+  
         @Override
-        public boolean visit(final MethodInvocation node) {
-          String currentContext;
-          if (null != currentMethod) {
-            currentContext = getMethodStr(currentMethod.resolveBinding());
+        public boolean visit(final SimpleName node) {
+          IBinding binding = node.resolveBinding();
+          if (binding instanceof IMethodBinding) {
+            if (!(node.getParent() instanceof MethodDeclaration)) {
+              String ref = toStringMethod(((IMethodBinding) binding));
+              logger.info(String.format("   Ref %s", ref));
+            }
           }
-          else if (null != currentField) {
-            currentContext = currentField.toString();
+          else if (binding instanceof IVariableBinding) {
+            IVariableBinding variableBinding = (IVariableBinding) binding;
+            String ref = toStringVar(variableBinding);
+            if (null != ref) logger.info(String.format("   Ref %s", ref));
           }
-          else {
-            currentContext = "???";
-          }
-          logger.info(String.format("  Reference: %s -> %s",
-            currentContext,
-            null == node ? null : getMethodStr(node.resolveMethodBinding())
-          ));
           return super.visit(node);
         }
-        
+  
         @Override
-        public boolean visit(final FieldAccess node) {
-          String currentContext;
-          if (null != currentMethod) {
-            currentContext = getMethodStr(currentMethod.resolveBinding());
-          }
-          else if (null != currentField) {
-            currentContext = currentField.toString();
-          }
-          else {
-            currentContext = "???";
-          }
-          logger.info(String.format("  Reference: %s -> %s",
-            currentContext,
-            null == node ? null : getFieldStr(node.resolveFieldBinding())
-          ));
+        public boolean visit(final ConstructorInvocation node) {
+          IBinding binding = node.resolveConstructorBinding();
+          String ref = toStringMethod(((IMethodBinding) binding));
+          logger.info(String.format("   Ref %s", ref));
           return super.visit(node);
         }
-        
+  
         @Override
-        public boolean visit(final FieldDeclaration node) {
-          currentField = node;
-          currentMethod = null;
-          Javadoc javadoc = node.getJavadoc();
-          logger.info(String.format("  Field %s",
-            node.toString().replaceAll("\n", "\n    ").trim()));
+        public boolean visit(final SuperConstructorInvocation node) {
+          IMethodBinding binding = node.resolveConstructorBinding();
+          String ref = toStringMethod(binding);
+          logger.info(String.format("   Ref %s", ref));
+          return super.visit(node);
+        }
+  
+        @Override
+        public boolean visit(final VariableDeclarationFragment node) {
+          Optional<ASTNode> fieldDeclaration = stack.stream().filter(x -> x instanceof FieldDeclaration).findAny();
+          if (fieldDeclaration.isPresent()) {
+            Javadoc javadoc = ((FieldDeclaration) fieldDeclaration.get()).getJavadoc();
+            IVariableBinding variableBinding = node.resolveBinding();
+            if (null == variableBinding) {
+              logger.info(String.format("  UNRESOLVED Field %s", node));
+            }
+            else {
+              ITypeBinding declaringClass = variableBinding.getDeclaringClass();
+              currentCodeContext = String.format("%s::%s", null == declaringClass ? null : declaringClass.getBinaryName(), variableBinding.getName());
+              logger.info(String.format("  Field %s %s", currentCodeContext,
+                (!useJavaDoc || null == javadoc ? node : javadoc).toString().replaceAll("\n", "\n    ").trim()));
+            }
+          }
           return super.visit(node);
         }
         
         @Override
         public boolean visit(final MethodDeclaration node) {
-          currentMethod = node;
-          currentField = null;
-          IMethodBinding iMethodBinding = node.resolveBinding();
           Javadoc javadoc = node.getJavadoc();
-          logger.info(String.format("  Method %s::%s\n    %s",
-            null == iMethodBinding ? null : iMethodBinding.getDeclaringClass().getBinaryName(),
-            null == iMethodBinding ? null : iMethodBinding.getName(),
-            node.toString().replaceAll("\n", "\n    ").trim()));
+          IMethodBinding methodBinding = node.resolveBinding();
+          currentCodeContext = toStringMethod(methodBinding);
+          logger.info(String.format("  Method %s %s", currentCodeContext,
+            (!useJavaDoc || null == javadoc ? node : javadoc).toString().replaceAll("\n", "\n    ").trim()));
           return super.visit(node);
         }
-        
+  
       });
       
       
     });
   }
   
-  @Nonnull
-  private static String getFieldStr(final IVariableBinding iVariableBinding) {
-    if (null == iVariableBinding) return null;
-    ITypeBinding declaringClass = iVariableBinding.getDeclaringClass();
-    return (null == declaringClass ? "?" : declaringClass.getBinaryName()) + "::" + iVariableBinding.getName();
+  
+  private static String toStringMethod(final IMethodBinding methodBinding) {
+    final String symbolStr;
+    if (null != methodBinding) {
+      ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();
+      String params = null == parameterTypes ? "null" : Arrays.stream(parameterTypes).map(x -> toStringType(x)).map(x -> null == x ? "null" : x).reduce((a, b) -> a + "," + b).orElse("");
+      String name = methodBinding.getDeclaringClass().getBinaryName() + "::" + methodBinding.getName();
+      symbolStr = String.format("%s(%s)", name, params);
+    }
+    else {
+      symbolStr = "???";
+    }
+    return symbolStr;
   }
   
-  @Nonnull
-  private static String getMethodStr(final IMethodBinding iMethodBinding) {
-    ITypeBinding declaringClass = iMethodBinding.getDeclaringClass();
-    return declaringClass.getBinaryName() + "::" + iMethodBinding.getName();
+  
+  private static String toStringType(final ITypeBinding x) {
+    if (null == x) return "null";
+    else if (x.isPrimitive()) return x.getName();
+    else if (x.isArray()) return toStringType(x.getElementType()) + "[]";
+    else return x.getBinaryName();
+    
   }
+  
+  private static String toStringVar(final IVariableBinding iVariableBinding) {
+    if (null == iVariableBinding) return null;
+    ITypeBinding declaringClass = iVariableBinding.getDeclaringClass();
+    if (null == declaringClass) return null;
+    return declaringClass.getBinaryName() + "::" + iVariableBinding.getName();
+  }
+  
 }
