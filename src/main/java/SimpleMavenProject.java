@@ -121,6 +121,7 @@ public class SimpleMavenProject {
     astParser.setResolveBindings(true);
     HashMap<String, String> compilerOptions = new HashMap<>();
     compilerOptions.put(CompilerOptions.OPTION_Source, CompilerOptions.versionFromJdkLevel(ClassFileConstants.JDK1_8));
+    compilerOptions.put(CompilerOptions.OPTION_DocCommentSupport, CompilerOptions.ENABLED);
     astParser.setCompilerOptions(compilerOptions);
     String[] classpathEntries = resolve().getDependencies().stream().map(x -> x.getArtifact().getFile().getAbsolutePath()).toArray(i -> new String[i]);
     String[] sourcepathEntries = Stream.concat(

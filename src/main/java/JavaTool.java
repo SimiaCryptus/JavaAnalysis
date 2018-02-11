@@ -32,7 +32,7 @@ public class JavaTool {
     HashMap<String, CompilationUnit> parsedFiles = new SimpleMavenProject(root).parse();
     
     parsedFiles.forEach((file, ast) -> {
-      logger.info("file: " + file);
+      logger.info("\nFile: " + file);
       Arrays.stream(ast.getProblems()).forEach(problem -> {
         logger.warn("  ERR: " + problem.getMessage());
       });
@@ -57,10 +57,10 @@ public class JavaTool {
         public boolean visit(final MethodDeclaration node) {
           IMethodBinding iMethodBinding = node.resolveBinding();
           Javadoc javadoc = node.getJavadoc();
-          logger.info(String.format("  %s::%s  %s",
+          logger.info(String.format("\n  Method %s::%s\n    %s",
             null == iMethodBinding ? null : iMethodBinding.getDeclaringClass().getQualifiedName(),
             null == iMethodBinding ? null : iMethodBinding.getName(),
-            null == javadoc ? null : javadoc.tags()));
+            node.toString().replaceAll("\n", "\n    ")));
           return super.visit(node);
         }
       });
