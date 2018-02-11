@@ -58,10 +58,7 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ResolutionErrorPolicy;
 import org.eclipse.aether.util.repository.SimpleResolutionErrorPolicy;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.FileASTRequestor;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.slf4j.ILoggerFactory;
@@ -74,14 +71,38 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
+/**
+ * Provides a simple api for accessing the document object model of a Maven Java project
+ */
 public class SimpleMavenProject {
-  public static final File repositoryLocation = new File(System.getProperty("user.home"), ".m2/repository");
-  protected static final Logger logger = LoggerFactory.getLogger(SimpleMavenProject.class);
+  private static final File repositoryLocation = new File(System.getProperty("user.home"), ".m2/repository");
+  private static final Logger logger = LoggerFactory.getLogger(SimpleMavenProject.class);
+  /**
+   * The initialized Maven component container - Plexus Dependency Injection object
+   */
   public final DefaultPlexusContainer container;
+  /**
+   * The initialized Maven session
+   */
   public final DefaultRepositorySystemSession session;
+  /**
+   * The initialized Maven project object
+   */
   public final MavenProject project;
+  /**
+   * The absolute file path of the project root as passed to the constructor
+   */
   public final String projectRoot;
   
+  /**
+   * Instantiates a new Simple maven project.
+   *
+   * @param projectRoot the project root
+   * @throws IOException              the io exception
+   * @throws PlexusContainerException the plexus container exception
+   * @throws ComponentLookupException the component lookup exception
+   * @throws ProjectBuildingException the project building exception
+   */
   public SimpleMavenProject(final String projectRoot) throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException {
     this.projectRoot = projectRoot;
     Map<Object, Object> configProps = new LinkedHashMap<>();
@@ -93,28 +114,69 @@ public class SimpleMavenProject {
     this.project = getMavenProject(container, session);
   }
   
+  /**
+   * A sample CLI application which loads a maven java project and prints out the parse tree.
+   *
+   * @param args the input arguments
+   * @throws Exception the exception
+   */
   public static void main(String[] args) throws Exception {
-    SimpleMavenProject maven = new SimpleMavenProject(args[0]);
-    Stream.concat(
-      maven.project.getTestCompileSourceRoots().stream(),
-      maven.project.getCompileSourceRoots().stream()
-    ).forEach(sourceRoot -> {
-      try {
-        logger.info("Code: " + new File(sourceRoot).getCanonicalFile());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
+    SimpleMavenProject mavenProject = new SimpleMavenProject(root);
+    mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
+      logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
     });
-    maven.resolve().getDependencies().forEach(dependency -> {
-      try {
-        logger.info("Dep: " + dependency.getArtifact().getFile().getCanonicalFile());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    HashMap<String, CompilationUnit> parsedFiles = mavenProject.parse();
+    parsedFiles.forEach((file, ast) -> {
+      logger.info("File: " + file);
+      Arrays.stream(ast.getProblems()).forEach(problem -> {
+        logger.warn("  ERR: " + problem.getMessage());
+      });
+      Arrays.stream(ast.getMessages()).forEach(problem -> {
+        logger.info("  MSG: " + problem.getMessage());
+      });
+      ast.accept(new ASTVisitor() {
+        String indent = "  ";
+        
+        @Override
+        public void preVisit(final ASTNode node) {
+          logger.info(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
+          indent += "  ";
+        }
+        
+        @Override
+        public void postVisit(final ASTNode node) {
+          if (indent.length() < 2) throw new IllegalStateException();
+          indent = indent.substring(indent.length() - 2);
+        }
+        
+        @Override
+        public boolean visit(final MethodDeclaration node) {
+          IMethodBinding iMethodBinding = node.resolveBinding();
+          Javadoc javadoc = node.getJavadoc();
+          logger.info(String.format("  Method %s::%s\n    %s",
+            null == iMethodBinding ? null : iMethodBinding.getDeclaringClass().getQualifiedName(),
+            null == iMethodBinding ? null : iMethodBinding.getName(),
+            node.toString().replaceAll("\n", "\n    ").trim()));
+          return super.visit(node);
+        }
+      });
+      
     });
   }
   
-  public HashMap<String, CompilationUnit> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+  
+  /**
+   * Parses all files in the project.
+   *
+   * @return the hash map
+   * @throws IOException                   the io exception
+   * @throws PlexusContainerException      the plexus container exception
+   * @throws ComponentLookupException      the component lookup exception
+   * @throws ProjectBuildingException      the project building exception
+   * @throws DependencyResolutionException the dependency resolution exception
+   */
+  public final HashMap<String, CompilationUnit> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     final String root = projectRoot;
     ASTParser astParser = ASTParser.newParser(AST.JLS9);
     astParser.setKind(ASTParser.K_EXPRESSION);
@@ -146,18 +208,28 @@ public class SimpleMavenProject {
     return results;
   }
   
+  /**
+   * Resolves Maven dependencies
+   *
+   * @return the dependency resolution result
+   * @throws IOException                   the io exception
+   * @throws PlexusContainerException      the plexus container exception
+   * @throws ComponentLookupException      the component lookup exception
+   * @throws ProjectBuildingException      the project building exception
+   * @throws DependencyResolutionException the dependency resolution exception
+   */
   public DependencyResolutionResult resolve() throws IOException, PlexusContainerException, org.codehaus.plexus.component.repository.exception.ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     return container.lookup(ProjectDependenciesResolver.class).resolve(new DefaultDependencyResolutionRequest().setRepositorySession(session).setMavenProject(project));
   }
   
-  public MavenProject getMavenProject(final DefaultPlexusContainer container, final DefaultRepositorySystemSession session) throws ProjectBuildingException, org.codehaus.plexus.component.repository.exception.ComponentLookupException {
+  private MavenProject getMavenProject(final DefaultPlexusContainer container, final DefaultRepositorySystemSession session) throws ProjectBuildingException, org.codehaus.plexus.component.repository.exception.ComponentLookupException {
     DefaultProjectBuildingRequest request = new DefaultProjectBuildingRequest();
     request.setRepositorySession(session);
     return container.lookup(ProjectBuilder.class).build(new File(projectRoot, "pom.xml"), request).getProject();
   }
   
   @Nonnull
-  public DefaultRepositorySystemSession getSession(final File repositoryLocation, final boolean isOffline, final Map<Object, Object> configProps, final DefaultPlexusContainer container) throws org.codehaus.plexus.component.repository.exception.ComponentLookupException {
+  private DefaultRepositorySystemSession getSession(final File repositoryLocation, final boolean isOffline, final Map<Object, Object> configProps, final DefaultPlexusContainer container) throws org.codehaus.plexus.component.repository.exception.ComponentLookupException {
     DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
     session.setConfigProperties(configProps);
     session.setCache(new DefaultRepositoryCache());
@@ -170,7 +242,7 @@ public class SimpleMavenProject {
   }
   
   @Nonnull
-  public DefaultPlexusContainer getPlexusContainer(final File repositoryLocation) throws IOException, PlexusContainerException {
+  private DefaultPlexusContainer getPlexusContainer(final File repositoryLocation) throws IOException, PlexusContainerException {
     DefaultRepositoryLayout defaultRepositoryLayout = new DefaultRepositoryLayout();
     ArtifactRepositoryPolicy repositoryPolicy = new ArtifactRepositoryPolicy(true, ArtifactRepositoryPolicy.UPDATE_POLICY_NEVER, ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN);
     String url = "file://" + repositoryLocation.getCanonicalPath();
@@ -185,7 +257,7 @@ public class SimpleMavenProject {
   private static class SimpleModule extends AbstractModule {
     private final ArtifactRepository repository;
     
-    public SimpleModule(final ArtifactRepository repository) {this.repository = repository;}
+    private SimpleModule(final ArtifactRepository repository) {this.repository = repository;}
     
     protected void configure() {
       this.bind(ILoggerFactory.class).toInstance(LoggerFactory.getILoggerFactory());
