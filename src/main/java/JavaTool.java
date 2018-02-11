@@ -17,27 +17,50 @@
  * under the License.
  */
 
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.HashMap;
 
 public class JavaTool {
   protected static final Logger logger = LoggerFactory.getLogger(JavaTool.class);
   
   public static void main(String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
-    Map<File, ASTNode> parsedFiles = new SimpleMavenProject(root).parse();
+    HashMap<String, CompilationUnit> parsedFiles = new SimpleMavenProject(root).parse();
+    
     parsedFiles.forEach((file, ast) -> {
       logger.info("file: " + file);
+      Arrays.stream(ast.getProblems()).forEach(problem -> {
+        logger.warn("  ERR: " + problem.getMessage());
+      });
+      Arrays.stream(ast.getMessages()).forEach(problem -> {
+        logger.info("  MSG: " + problem.getMessage());
+      });
       ast.accept(new ASTVisitor() {
+        String indent = "  ";
+  
+        @Override
+        public void preVisit(final ASTNode node) {
+          logger.info(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
+          indent += "  ";
+        }
+  
+        @Override
+        public void postVisit(final ASTNode node) {
+          indent = indent.substring(indent.length() - 2);
+        }
+  
         @Override
         public boolean visit(final MethodDeclaration node) {
-          logger.info("visit method line: " + node.getName());
+          IMethodBinding iMethodBinding = node.resolveBinding();
+          Javadoc javadoc = node.getJavadoc();
+          logger.info(String.format("  %s::%s  %s",
+            null == iMethodBinding ? null : iMethodBinding.getDeclaringClass().getQualifiedName(),
+            null == iMethodBinding ? null : iMethodBinding.getName(),
+            null == javadoc ? null : javadoc.tags()));
           return super.visit(node);
         }
       });

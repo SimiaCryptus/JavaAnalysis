@@ -58,8 +58,12 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ResolutionErrorPolicy;
 import org.eclipse.aether.util.repository.SimpleResolutionErrorPolicy;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FileASTRequestor;
+import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
+import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,11 +71,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class SimpleMavenProject {
@@ -114,23 +114,35 @@ public class SimpleMavenProject {
     });
   }
   
-  public Map<File, ASTNode> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+  public HashMap<String, CompilationUnit> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     final String root = projectRoot;
-    ASTParser astParser = ASTParser.newParser(8);
+    ASTParser astParser = ASTParser.newParser(AST.JLS9);
+    astParser.setKind(ASTParser.K_EXPRESSION);
+    astParser.setResolveBindings(true);
+    HashMap<String, String> compilerOptions = new HashMap<>();
+    compilerOptions.put(CompilerOptions.OPTION_Source, CompilerOptions.versionFromJdkLevel(ClassFileConstants.JDK1_8));
+    astParser.setCompilerOptions(compilerOptions);
     String[] classpathEntries = resolve().getDependencies().stream().map(x -> x.getArtifact().getFile().getAbsolutePath()).toArray(i -> new String[i]);
     String[] sourcepathEntries = Stream.concat(
       project.getTestCompileSourceRoots().stream(),
       project.getCompileSourceRoots().stream()
     ).toArray(i -> new String[i]);
-    astParser.setEnvironment(classpathEntries, sourcepathEntries, null, false);
-    return FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().collect(Collectors.toMap(file -> file, file -> {
-      try {
-        astParser.setSource(FileUtils.readFileToString(file, "UTF-8").toCharArray());
-        return astParser.createAST(new NullProgressMonitor());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }));
+    astParser.setEnvironment(classpathEntries, sourcepathEntries, null, true);
+    HashMap<String, CompilationUnit> results = new HashMap<>();
+    astParser.createASTs(
+      FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new String[i]),
+      null,
+      new String[]{},
+      new FileASTRequestor() {
+        @Override
+        public void acceptAST(final String source, final CompilationUnit ast) {
+          results.put(source, ast);
+        }
+      },
+      new NullProgressMonitor()
+    );
+    
+    return results;
   }
   
   public DependencyResolutionResult resolve() throws IOException, PlexusContainerException, org.codehaus.plexus.component.repository.exception.ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
