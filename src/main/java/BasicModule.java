@@ -19,7 +19,6 @@
 
 import com.google.inject.AbstractModule;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
@@ -28,8 +27,6 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Repository;
-import org.apache.maven.repository.ArtifactDoesNotExistException;
-import org.apache.maven.repository.ArtifactTransferFailedException;
 import org.apache.maven.repository.ArtifactTransferListener;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.settings.Mirror;
@@ -52,25 +49,25 @@ class BasicModule extends AbstractModule {
     this.bind(ILoggerFactory.class).toInstance(LoggerFactory.getILoggerFactory());
     this.bind(RepositorySystem.class).toInstance(new RepositorySystem() {
       @Override
-      public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String packaging) {
+      public Artifact createArtifact(final CharSequence groupId, final CharSequence artifactId, final CharSequence version, final CharSequence packaging) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String scope, final String type) {
+      public Artifact createArtifact(final CharSequence groupId, final CharSequence artifactId, final CharSequence version, final CharSequence scope, final CharSequence type) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public Artifact createProjectArtifact(final String groupId, final String artifactId, final String version) {
+      public Artifact createProjectArtifact(final CharSequence groupId, final CharSequence artifactId, final CharSequence version) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public Artifact createArtifactWithClassifier(final String groupId, final String artifactId, final String version, final String type, final String classifier) {
+      public Artifact createArtifactWithClassifier(final CharSequence groupId, final CharSequence artifactId, final CharSequence version, final CharSequence type, final CharSequence classifier) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
@@ -88,30 +85,30 @@ class BasicModule extends AbstractModule {
       }
       
       @Override
-      public ArtifactRepository buildArtifactRepository(final Repository r) throws InvalidRepositoryException {
+      public ArtifactRepository buildArtifactRepository(final Repository r) {
         return repository;
       }
       
       @Override
-      public ArtifactRepository createDefaultRemoteRepository() throws InvalidRepositoryException {
+      public ArtifactRepository createDefaultRemoteRepository() {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public ArtifactRepository createDefaultLocalRepository() throws InvalidRepositoryException {
+      public ArtifactRepository createDefaultLocalRepository() {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public ArtifactRepository createLocalRepository(final File localRepository) throws InvalidRepositoryException {
+      public ArtifactRepository createLocalRepository(final File localRepository) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public ArtifactRepository createArtifactRepository(final String id, final String url1, final ArtifactRepositoryLayout repositoryLayout, final ArtifactRepositoryPolicy snapshots, final ArtifactRepositoryPolicy releases) {
+      public ArtifactRepository createArtifactRepository(final CharSequence id, final CharSequence url1, final ArtifactRepositoryLayout repositoryLayout, final ArtifactRepositoryPolicy snapshots, final ArtifactRepositoryPolicy releases) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
@@ -163,12 +160,12 @@ class BasicModule extends AbstractModule {
       }
       
       @Override
-      public void publish(final ArtifactRepository repository1, final File source, final String remotePath, final ArtifactTransferListener transferListener) throws ArtifactTransferFailedException {
+      public void publish(final ArtifactRepository repository1, final File source, final CharSequence remotePath, final ArtifactTransferListener transferListener) {
       
       }
       
       @Override
-      public void retrieve(final ArtifactRepository repository1, final File destination, final String remotePath, final ArtifactTransferListener transferListener) throws ArtifactTransferFailedException, ArtifactDoesNotExistException {
+      public void retrieve(final ArtifactRepository repository1, final File destination, final CharSequence remotePath, final ArtifactTransferListener transferListener) {
       
       }
     });

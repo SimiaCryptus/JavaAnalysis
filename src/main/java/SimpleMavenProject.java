@@ -24,7 +24,14 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
-import org.apache.maven.project.*;
+import org.apache.maven.project.DefaultDependencyResolutionRequest;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
+import org.apache.maven.project.DependencyResolutionException;
+import org.apache.maven.project.DependencyResolutionResult;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuilder;
+import org.apache.maven.project.ProjectBuildingException;
+import org.apache.maven.project.ProjectDependenciesResolver;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.codehaus.plexus.ContainerConfiguration;
 import org.codehaus.plexus.DefaultContainerConfiguration;
@@ -41,7 +48,15 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ResolutionErrorPolicy;
 import org.eclipse.aether.util.repository.SimpleResolutionErrorPolicy;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FileASTRequestor;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.slf4j.Logger;
@@ -50,7 +65,11 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Stack;
 import java.util.stream.Stream;
 
 /**
@@ -102,13 +121,13 @@ public class SimpleMavenProject {
    * @param args the input arguments
    * @throws Exception the exception
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(CharSequence[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
     mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
       logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
     });
-    HashMap<String, CompilationUnit> parsedFiles = mavenProject.parse();
+    HashMap<CharSequence, CompilationUnit> parsedFiles = mavenProject.parse();
     parsedFiles.forEach((file, ast) -> {
       logger.info("File: " + file);
       Arrays.stream(ast.getProblems()).forEach(problem -> {
@@ -170,29 +189,29 @@ public class SimpleMavenProject {
    * @throws ProjectBuildingException      the project building exception
    * @throws DependencyResolutionException the dependency resolution exception
    */
-  public final HashMap<String, CompilationUnit> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+  public final HashMap<CharSequence, CompilationUnit> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     final String root = projectRoot;
     ASTParser astParser = ASTParser.newParser(AST.JLS9);
     astParser.setKind(ASTParser.K_EXPRESSION);
     astParser.setResolveBindings(true);
-    HashMap<String, String> compilerOptions = new HashMap<>();
+    HashMap<CharSequence, CharSequence> compilerOptions = new HashMap<>();
     compilerOptions.put(CompilerOptions.OPTION_Source, CompilerOptions.versionFromJdkLevel(ClassFileConstants.JDK1_8));
     compilerOptions.put(CompilerOptions.OPTION_DocCommentSupport, CompilerOptions.ENABLED);
     astParser.setCompilerOptions(compilerOptions);
-    String[] classpathEntries = resolve().getDependencies().stream().map(x -> x.getArtifact().getFile().getAbsolutePath()).toArray(i -> new String[i]);
+    String[] classpathEntries = resolve().getDependencies().stream().map(x -> x.getArtifact().getFile().getAbsolutePath()).toArray(i -> new CharSequence[i]);
     String[] sourcepathEntries = Stream.concat(
       project.getTestCompileSourceRoots().stream(),
       project.getCompileSourceRoots().stream()
-    ).toArray(i -> new String[i]);
+    ).toArray(i -> new CharSequence[i]);
     astParser.setEnvironment(classpathEntries, sourcepathEntries, null, true);
-    HashMap<String, CompilationUnit> results = new HashMap<>();
+    HashMap<CharSequence, CompilationUnit> results = new HashMap<>();
     astParser.createASTs(
-      FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new String[i]),
+      FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new CharSequence[i]),
       null,
       new String[]{},
       new FileASTRequestor() {
         @Override
-        public void acceptAST(final String source, final CompilationUnit ast) {
+        public void acceptAST(final CharSequence source, final CompilationUnit ast) {
           results.put(source, ast);
         }
       },
@@ -212,7 +231,7 @@ public class SimpleMavenProject {
    * @throws ProjectBuildingException      the project building exception
    * @throws DependencyResolutionException the dependency resolution exception
    */
-  public DependencyResolutionResult resolve() throws IOException, PlexusContainerException, org.codehaus.plexus.component.repository.exception.ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+  public DependencyResolutionResult resolve() throws org.codehaus.plexus.component.repository.exception.ComponentLookupException, DependencyResolutionException {
     return container.lookup(ProjectDependenciesResolver.class).resolve(new DefaultDependencyResolutionRequest().setRepositorySession(session).setMavenProject(project));
   }
   
