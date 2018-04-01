@@ -49,25 +49,25 @@ class BasicModule extends AbstractModule {
     this.bind(ILoggerFactory.class).toInstance(LoggerFactory.getILoggerFactory());
     this.bind(RepositorySystem.class).toInstance(new RepositorySystem() {
       @Override
-      public Artifact createArtifact(final CharSequence groupId, final CharSequence artifactId, final CharSequence version, final CharSequence packaging) {
+      public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String packaging) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public Artifact createArtifact(final CharSequence groupId, final CharSequence artifactId, final CharSequence version, final CharSequence scope, final CharSequence type) {
+      public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String scope, final String type) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public Artifact createProjectArtifact(final CharSequence groupId, final CharSequence artifactId, final CharSequence version) {
+      public Artifact createProjectArtifact(final String groupId, final String artifactId, final String version) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public Artifact createArtifactWithClassifier(final CharSequence groupId, final CharSequence artifactId, final CharSequence version, final CharSequence type, final CharSequence classifier) {
+      public Artifact createArtifactWithClassifier(final String groupId, final String artifactId, final String version, final String type, final String classifier) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
@@ -108,7 +108,7 @@ class BasicModule extends AbstractModule {
       }
       
       @Override
-      public ArtifactRepository createArtifactRepository(final CharSequence id, final CharSequence url1, final ArtifactRepositoryLayout repositoryLayout, final ArtifactRepositoryPolicy snapshots, final ArtifactRepositoryPolicy releases) {
+      public ArtifactRepository createArtifactRepository(final String id, final String url1, final ArtifactRepositoryLayout repositoryLayout, final ArtifactRepositoryPolicy snapshots, final ArtifactRepositoryPolicy releases) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
@@ -160,12 +160,12 @@ class BasicModule extends AbstractModule {
       }
       
       @Override
-      public void publish(final ArtifactRepository repository1, final File source, final CharSequence remotePath, final ArtifactTransferListener transferListener) {
+      public void publish(final ArtifactRepository repository1, final File source, final String remotePath, final ArtifactTransferListener transferListener) {
       
       }
       
       @Override
-      public void retrieve(final ArtifactRepository repository1, final File destination, final CharSequence remotePath, final ArtifactTransferListener transferListener) {
+      public void retrieve(final ArtifactRepository repository1, final File destination, final String remotePath, final ArtifactTransferListener transferListener) {
       
       }
     });

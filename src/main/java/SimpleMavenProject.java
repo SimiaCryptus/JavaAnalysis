@@ -121,13 +121,13 @@ public class SimpleMavenProject {
    * @param args the input arguments
    * @throws Exception the exception
    */
-  public static void main(CharSequence[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
     mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
       logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
     });
-    HashMap<CharSequence, CompilationUnit> parsedFiles = mavenProject.parse();
+    HashMap<String, CompilationUnit> parsedFiles = mavenProject.parse();
     parsedFiles.forEach((file, ast) -> {
       logger.info("File: " + file);
       Arrays.stream(ast.getProblems()).forEach(problem -> {
@@ -183,35 +183,32 @@ public class SimpleMavenProject {
    * Parses all files in the project.
    *
    * @return the hash map
-   * @throws IOException                   the io exception
-   * @throws PlexusContainerException      the plexus container exception
    * @throws ComponentLookupException      the component lookup exception
-   * @throws ProjectBuildingException      the project building exception
    * @throws DependencyResolutionException the dependency resolution exception
    */
-  public final HashMap<CharSequence, CompilationUnit> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+  public final HashMap<String, CompilationUnit> parse() throws ComponentLookupException, DependencyResolutionException {
     final String root = projectRoot;
     ASTParser astParser = ASTParser.newParser(AST.JLS9);
     astParser.setKind(ASTParser.K_EXPRESSION);
     astParser.setResolveBindings(true);
-    HashMap<CharSequence, CharSequence> compilerOptions = new HashMap<>();
+    HashMap<String, String> compilerOptions = new HashMap<>();
     compilerOptions.put(CompilerOptions.OPTION_Source, CompilerOptions.versionFromJdkLevel(ClassFileConstants.JDK1_8));
     compilerOptions.put(CompilerOptions.OPTION_DocCommentSupport, CompilerOptions.ENABLED);
     astParser.setCompilerOptions(compilerOptions);
-    String[] classpathEntries = resolve().getDependencies().stream().map(x -> x.getArtifact().getFile().getAbsolutePath()).toArray(i -> new CharSequence[i]);
+    String[] classpathEntries = resolve().getDependencies().stream().map(x -> x.getArtifact().getFile().getAbsolutePath()).toArray(i -> new String[i]);
     String[] sourcepathEntries = Stream.concat(
       project.getTestCompileSourceRoots().stream(),
       project.getCompileSourceRoots().stream()
-    ).toArray(i -> new CharSequence[i]);
+    ).toArray(i -> new String[i]);
     astParser.setEnvironment(classpathEntries, sourcepathEntries, null, true);
-    HashMap<CharSequence, CompilationUnit> results = new HashMap<>();
+    HashMap<String, CompilationUnit> results = new HashMap<>();
     astParser.createASTs(
-      FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new CharSequence[i]),
+      FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new String[i]),
       null,
       new String[]{},
       new FileASTRequestor() {
         @Override
-        public void acceptAST(final CharSequence source, final CompilationUnit ast) {
+        public void acceptAST(final String source, final CompilationUnit ast) {
           results.put(source, ast);
         }
       },
