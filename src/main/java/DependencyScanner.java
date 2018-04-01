@@ -69,13 +69,13 @@ public class DependencyScanner extends SimpleMavenProject {
    * @param args the input arguments
    * @throws Exception the exception
    */
-  public static void main(CharSequence[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     DependencyScanner mavenProject = new DependencyScanner(root);
     mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
       logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
     });
-    HashMap<CharSequence, CompilationUnit> parsedFiles = mavenProject.parse();
+    HashMap<String, CompilationUnit> parsedFiles = mavenProject.parse();
     parsedFiles.forEach((file, ast) -> {
       logger.info("File: " + file);
       Arrays.stream(ast.getProblems()).forEach(problem -> {
@@ -128,13 +128,13 @@ public class DependencyScanner extends SimpleMavenProject {
           IBinding binding = node.resolveBinding();
           if (binding instanceof IMethodBinding) {
             if (!(node.getParent() instanceof MethodDeclaration)) {
-              CharSequence ref = toStringMethod(((IMethodBinding) binding));
+              String ref = toStringMethod(((IMethodBinding) binding));
               logger.info(String.format("   Ref %s", ref));
             }
           }
           else if (binding instanceof IVariableBinding) {
             IVariableBinding variableBinding = (IVariableBinding) binding;
-            CharSequence ref = toStringVar(variableBinding);
+            String ref = toStringVar(variableBinding);
             if (null != ref) logger.info(String.format("   Ref %s", ref));
           }
           return super.visit(node);
@@ -143,7 +143,7 @@ public class DependencyScanner extends SimpleMavenProject {
         @Override
         public boolean visit(final ConstructorInvocation node) {
           IBinding binding = node.resolveConstructorBinding();
-          CharSequence ref = toStringMethod(((IMethodBinding) binding));
+          String ref = toStringMethod(((IMethodBinding) binding));
           logger.info(String.format("   Ref %s", ref));
           return super.visit(node);
         }
@@ -151,7 +151,7 @@ public class DependencyScanner extends SimpleMavenProject {
         @Override
         public boolean visit(final SuperConstructorInvocation node) {
           IMethodBinding binding = node.resolveConstructorBinding();
-          CharSequence ref = toStringMethod(binding);
+          String ref = toStringMethod(binding);
           logger.info(String.format("   Ref %s", ref));
           return super.visit(node);
         }
@@ -196,8 +196,8 @@ public class DependencyScanner extends SimpleMavenProject {
     final String symbolStr;
     if (null != methodBinding) {
       ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();
-      CharSequence params = null == parameterTypes ? "null" : Arrays.stream(parameterTypes).map(x -> toStringType(x)).map(x -> null == x ? "null" : x).reduce((a, b) -> a + "," + b).orElse("");
-      CharSequence name = methodBinding.getDeclaringClass().getBinaryName() + "::" + methodBinding.getName();
+      String params = null == parameterTypes ? "null" : Arrays.stream(parameterTypes).map(x -> toStringType(x)).map(x -> null == x ? "null" : x).reduce((a, b) -> a + "," + b).orElse("");
+      String name = methodBinding.getDeclaringClass().getBinaryName() + "::" + methodBinding.getName();
       symbolStr = String.format("%s(%s)", name, params);
     }
     else {
@@ -207,7 +207,7 @@ public class DependencyScanner extends SimpleMavenProject {
   }
   
   
-  private static CharSequence toStringType(final ITypeBinding x) {
+  private static String toStringType(final ITypeBinding x) {
     if (null == x) return "null";
     else if (x.isPrimitive()) return x.getName();
     else if (x.isArray()) return toStringType(x.getElementType()) + "[]";
@@ -215,7 +215,7 @@ public class DependencyScanner extends SimpleMavenProject {
     
   }
   
-  private static CharSequence toStringVar(final IVariableBinding iVariableBinding) {
+  private static String toStringVar(final IVariableBinding iVariableBinding) {
     if (null == iVariableBinding) return null;
     ITypeBinding declaringClass = iVariableBinding.getDeclaringClass();
     if (null == declaringClass) return null;
