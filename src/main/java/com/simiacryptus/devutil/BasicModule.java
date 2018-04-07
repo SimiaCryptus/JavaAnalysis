@@ -17,9 +17,10 @@
  * under the License.
  */
 
+package com.simiacryptus.devutil;
+
 import com.google.inject.AbstractModule;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
@@ -28,8 +29,6 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Repository;
-import org.apache.maven.repository.ArtifactDoesNotExistException;
-import org.apache.maven.repository.ArtifactTransferFailedException;
 import org.apache.maven.repository.ArtifactTransferListener;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.settings.Mirror;
@@ -43,9 +42,17 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The type Basic module.
+ */
 class BasicModule extends AbstractModule {
   private final ArtifactRepository repository;
   
+  /**
+   * Instantiates a new Basic module.
+   *
+   * @param repository the repository
+   */
   BasicModule(final ArtifactRepository repository) {this.repository = repository;}
   
   protected void configure() {
@@ -88,24 +95,24 @@ class BasicModule extends AbstractModule {
       }
       
       @Override
-      public ArtifactRepository buildArtifactRepository(final Repository r) throws InvalidRepositoryException {
+      public ArtifactRepository buildArtifactRepository(final Repository r) {
         return repository;
       }
       
       @Override
-      public ArtifactRepository createDefaultRemoteRepository() throws InvalidRepositoryException {
+      public ArtifactRepository createDefaultRemoteRepository() {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public ArtifactRepository createDefaultLocalRepository() throws InvalidRepositoryException {
+      public ArtifactRepository createDefaultLocalRepository() {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
       
       @Override
-      public ArtifactRepository createLocalRepository(final File localRepository) throws InvalidRepositoryException {
+      public ArtifactRepository createLocalRepository(final File localRepository) {
         if (0 < 1) throw new RuntimeException("Not Implemented");
         return null;
       }
@@ -163,12 +170,12 @@ class BasicModule extends AbstractModule {
       }
       
       @Override
-      public void publish(final ArtifactRepository repository1, final File source, final String remotePath, final ArtifactTransferListener transferListener) throws ArtifactTransferFailedException {
+      public void publish(final ArtifactRepository repository1, final File source, final String remotePath, final ArtifactTransferListener transferListener) {
       
       }
       
       @Override
-      public void retrieve(final ArtifactRepository repository1, final File destination, final String remotePath, final ArtifactTransferListener transferListener) throws ArtifactTransferFailedException, ArtifactDoesNotExistException {
+      public void retrieve(final ArtifactRepository repository1, final File destination, final String remotePath, final ArtifactTransferListener transferListener) {
       
       }
     });
