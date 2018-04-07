@@ -17,6 +17,8 @@
  * under the License.
  */
 
+package com.simiacryptus.devutil;
+
 import com.google.inject.AbstractModule;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -40,9 +42,17 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The type Basic module.
+ */
 class BasicModule extends AbstractModule {
   private final ArtifactRepository repository;
   
+  /**
+   * Instantiates a new Basic module.
+   *
+   * @param repository the repository
+   */
   BasicModule(final ArtifactRepository repository) {this.repository = repository;}
   
   protected void configure() {

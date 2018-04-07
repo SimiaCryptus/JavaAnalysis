@@ -17,6 +17,8 @@
  * under the License.
  */
 
+package com.simiacryptus.devutil;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -139,7 +141,7 @@ public class SimpleMavenProject {
       ast.accept(new ASTVisitor() {
         String indent = "  ";
         Stack<ASTNode> stack = new Stack<>();
-  
+        
         @Override
         public void preVisit(final ASTNode node) {
           indent += "  ";
@@ -165,17 +167,50 @@ public class SimpleMavenProject {
           }
           stack.push(node);
         }
-  
+        
         @Override
         public void postVisit(final ASTNode node) {
           if (node != stack.pop()) throw new IllegalStateException();
           if (indent.length() < 2) throw new IllegalStateException();
           indent = indent.substring(2);
         }
-  
+        
       });
       
     });
+  }
+  
+  /**
+   * Load project hash map.
+   *
+   * @return the hash map
+   * @throws IOException                   the io exception
+   * @throws PlexusContainerException      the plexus container exception
+   * @throws ComponentLookupException      the component lookup exception
+   * @throws ProjectBuildingException      the project building exception
+   * @throws DependencyResolutionException the dependency resolution exception
+   */
+  public static HashMap<String, CompilationUnit> loadProject() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+    return loadProject(new File(".").getAbsolutePath());
+  }
+  
+  /**
+   * Load project hash map.
+   *
+   * @param root the root
+   * @return the hash map
+   * @throws IOException                   the io exception
+   * @throws PlexusContainerException      the plexus container exception
+   * @throws ComponentLookupException      the component lookup exception
+   * @throws ProjectBuildingException      the project building exception
+   * @throws DependencyResolutionException the dependency resolution exception
+   */
+  public static HashMap<String, CompilationUnit> loadProject(final String root) throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+    SimpleMavenProject mavenProject = new SimpleMavenProject(root);
+    mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
+      logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
+    });
+    return mavenProject.parse();
   }
   
   
@@ -222,10 +257,7 @@ public class SimpleMavenProject {
    * Resolves Maven dependencies
    *
    * @return the dependency resolution result
-   * @throws IOException                   the io exception
-   * @throws PlexusContainerException      the plexus container exception
    * @throws ComponentLookupException      the component lookup exception
-   * @throws ProjectBuildingException      the project building exception
    * @throws DependencyResolutionException the dependency resolution exception
    */
   public DependencyResolutionResult resolve() throws org.codehaus.plexus.component.repository.exception.ComponentLookupException, DependencyResolutionException {
