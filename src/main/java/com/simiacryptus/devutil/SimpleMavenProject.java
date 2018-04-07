@@ -17,6 +17,8 @@
  * under the License.
  */
 
+package com.simiacryptus.devutil;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -24,7 +26,14 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
-import org.apache.maven.project.*;
+import org.apache.maven.project.DefaultDependencyResolutionRequest;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
+import org.apache.maven.project.DependencyResolutionException;
+import org.apache.maven.project.DependencyResolutionResult;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuilder;
+import org.apache.maven.project.ProjectBuildingException;
+import org.apache.maven.project.ProjectDependenciesResolver;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.codehaus.plexus.ContainerConfiguration;
 import org.codehaus.plexus.DefaultContainerConfiguration;
@@ -41,7 +50,15 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ResolutionErrorPolicy;
 import org.eclipse.aether.util.repository.SimpleResolutionErrorPolicy;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FileASTRequestor;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.slf4j.Logger;
@@ -50,7 +67,11 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Stack;
 import java.util.stream.Stream;
 
 /**
@@ -120,7 +141,7 @@ public class SimpleMavenProject {
       ast.accept(new ASTVisitor() {
         String indent = "  ";
         Stack<ASTNode> stack = new Stack<>();
-  
+        
         @Override
         public void preVisit(final ASTNode node) {
           indent += "  ";
@@ -146,22 +167,21 @@ public class SimpleMavenProject {
           }
           stack.push(node);
         }
-  
+        
         @Override
         public void postVisit(final ASTNode node) {
           if (node != stack.pop()) throw new IllegalStateException();
           if (indent.length() < 2) throw new IllegalStateException();
           indent = indent.substring(2);
         }
-  
+        
       });
       
     });
   }
   
-  
   /**
-   * Parses all files in the project.
+   * Load project hash map.
    *
    * @return the hash map
    * @throws IOException                   the io exception
@@ -170,7 +190,38 @@ public class SimpleMavenProject {
    * @throws ProjectBuildingException      the project building exception
    * @throws DependencyResolutionException the dependency resolution exception
    */
-  public final HashMap<String, CompilationUnit> parse() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+  public static HashMap<String, CompilationUnit> loadProject() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+    return loadProject(new File(".").getAbsolutePath());
+  }
+  
+  /**
+   * Load project hash map.
+   *
+   * @param root the root
+   * @return the hash map
+   * @throws IOException                   the io exception
+   * @throws PlexusContainerException      the plexus container exception
+   * @throws ComponentLookupException      the component lookup exception
+   * @throws ProjectBuildingException      the project building exception
+   * @throws DependencyResolutionException the dependency resolution exception
+   */
+  public static HashMap<String, CompilationUnit> loadProject(final String root) throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+    SimpleMavenProject mavenProject = new SimpleMavenProject(root);
+    mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
+      logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
+    });
+    return mavenProject.parse();
+  }
+  
+  
+  /**
+   * Parses all files in the project.
+   *
+   * @return the hash map
+   * @throws ComponentLookupException      the component lookup exception
+   * @throws DependencyResolutionException the dependency resolution exception
+   */
+  public final HashMap<String, CompilationUnit> parse() throws ComponentLookupException, DependencyResolutionException {
     final String root = projectRoot;
     ASTParser astParser = ASTParser.newParser(AST.JLS9);
     astParser.setKind(ASTParser.K_EXPRESSION);
@@ -206,13 +257,10 @@ public class SimpleMavenProject {
    * Resolves Maven dependencies
    *
    * @return the dependency resolution result
-   * @throws IOException                   the io exception
-   * @throws PlexusContainerException      the plexus container exception
    * @throws ComponentLookupException      the component lookup exception
-   * @throws ProjectBuildingException      the project building exception
    * @throws DependencyResolutionException the dependency resolution exception
    */
-  public DependencyResolutionResult resolve() throws IOException, PlexusContainerException, org.codehaus.plexus.component.repository.exception.ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
+  public DependencyResolutionResult resolve() throws org.codehaus.plexus.component.repository.exception.ComponentLookupException, DependencyResolutionException {
     return container.lookup(ProjectDependenciesResolver.class).resolve(new DefaultDependencyResolutionRequest().setRepositorySession(session).setMavenProject(project));
   }
   
