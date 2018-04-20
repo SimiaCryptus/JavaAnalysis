@@ -29,7 +29,7 @@
     </parent>
 
     <artifactId>java-analysis</artifactId>
-    <version>1.4.17</version>
+    <version>1.4.20</version>
     <description>Java 8 Static Code Analysis</description>
     <scm>
         <url>https://github.com/acharneski/JavaAnalysis/</url>
