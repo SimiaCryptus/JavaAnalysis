@@ -19,21 +19,8 @@
 
 package com.simiacryptus.devutil;
 
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.ConstructorInvocation;
-import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.IMethodBinding;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Javadoc;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +33,7 @@ import java.util.Stack;
  */
 public class DependencyScanner {
   private static final Logger logger = LoggerFactory.getLogger(DependencyScanner.class);
-  
+
   /**
    * A sample CLI application which loads a maven java project and prints out the parse tree.
    *
@@ -60,7 +47,7 @@ public class DependencyScanner {
       logTree(ast);
     });
   }
-  
+
   /**
    * Log tree.
    *
@@ -78,7 +65,7 @@ public class DependencyScanner {
       String indent = "  ";
       Stack<ASTNode> stack = new Stack<>();
       String currentCodeContext = "";
-      
+
       @Override
       public void preVisit(final ASTNode node) {
         indent += "  ";
@@ -88,30 +75,27 @@ public class DependencyScanner {
           String bindingString;
           if (binding == null) {
             bindingString = "???";
-          }
-          else if (binding instanceof ITypeBinding) {
+          } else if (binding instanceof ITypeBinding) {
             bindingString = ((ITypeBinding) binding).getBinaryName();
-          }
-          else {
+          } else {
             bindingString = binding.toString();
           }
           logger.debug(String.format("  %s%s%s = %s (%s: %s)", node.getStartPosition(), indent,
-            node.getClass().getSimpleName(), name.getFullyQualifiedName(),
-            null == binding ? null : binding.getClass().getSimpleName(), bindingString));
-        }
-        else {
+              node.getClass().getSimpleName(), name.getFullyQualifiedName(),
+              null == binding ? null : binding.getClass().getSimpleName(), bindingString));
+        } else {
           logger.debug(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
         }
         stack.push(node);
       }
-      
+
       @Override
       public void postVisit(final ASTNode node) {
         if (node != stack.pop()) throw new IllegalStateException();
         if (indent.length() < 2) throw new IllegalStateException();
         indent = indent.substring(2);
       }
-      
+
       @Override
       public boolean visit(final SimpleName node) {
         IBinding binding = node.resolveBinding();
@@ -120,15 +104,14 @@ public class DependencyScanner {
             String ref = toStringMethod(((IMethodBinding) binding));
             logger.info(String.format("   Ref %s", ref));
           }
-        }
-        else if (binding instanceof IVariableBinding) {
+        } else if (binding instanceof IVariableBinding) {
           IVariableBinding variableBinding = (IVariableBinding) binding;
           String ref = toStringVar(variableBinding);
           if (null != ref) logger.info(String.format("   Ref %s", ref));
         }
         return super.visit(node);
       }
-      
+
       @Override
       public boolean visit(final ConstructorInvocation node) {
         IBinding binding = node.resolveConstructorBinding();
@@ -136,7 +119,7 @@ public class DependencyScanner {
         logger.info(String.format("   Ref %s", ref));
         return super.visit(node);
       }
-      
+
       @Override
       public boolean visit(final SuperConstructorInvocation node) {
         IMethodBinding binding = node.resolveConstructorBinding();
@@ -144,7 +127,7 @@ public class DependencyScanner {
         logger.info(String.format("   Ref %s", ref));
         return super.visit(node);
       }
-      
+
       @Override
       public boolean visit(final VariableDeclarationFragment node) {
         Optional<ASTNode> fieldDeclaration = stack.stream().filter(x -> x instanceof FieldDeclaration).findAny();
@@ -153,31 +136,30 @@ public class DependencyScanner {
           IVariableBinding variableBinding = node.resolveBinding();
           if (null == variableBinding) {
             logger.info(String.format("  UNRESOLVED Field %s", node));
-          }
-          else {
+          } else {
             ITypeBinding declaringClass = variableBinding.getDeclaringClass();
             currentCodeContext = String.format("%s::%s", null == declaringClass ? null : declaringClass.getBinaryName(), variableBinding.getName());
             logger.info(String.format("  Field %s %s", currentCodeContext,
-              (!useJavaDoc || null == javadoc ? node : javadoc).toString().replaceAll("\n", "\n    ").trim()));
+                (!useJavaDoc || null == javadoc ? node : javadoc).toString().replaceAll("\n", "\n    ").trim()));
           }
         }
         return super.visit(node);
       }
-      
+
       @Override
       public boolean visit(final MethodDeclaration node) {
         Javadoc javadoc = node.getJavadoc();
         IMethodBinding methodBinding = node.resolveBinding();
         currentCodeContext = toStringMethod(methodBinding);
         logger.info(String.format("  Method %s %s", currentCodeContext,
-          (!useJavaDoc || null == javadoc ? node : javadoc).toString().replaceAll("\n", "\n    ").trim()));
+            (!useJavaDoc || null == javadoc ? node : javadoc).toString().replaceAll("\n", "\n    ").trim()));
         return super.visit(node);
       }
-      
+
     });
   }
-  
-  
+
+
   private static String toStringMethod(final IMethodBinding methodBinding) {
     final String symbolStr;
     if (null != methodBinding) {
@@ -185,27 +167,26 @@ public class DependencyScanner {
       String params = null == parameterTypes ? "null" : Arrays.stream(parameterTypes).map(x -> toStringType(x)).map(x -> null == x ? "null" : x).reduce((a, b) -> a + "," + b).orElse("");
       String name = methodBinding.getDeclaringClass().getBinaryName() + "::" + methodBinding.getName();
       symbolStr = String.format("%s(%s)", name, params);
-    }
-    else {
+    } else {
       symbolStr = "???";
     }
     return symbolStr;
   }
-  
-  
+
+
   private static String toStringType(final ITypeBinding x) {
     if (null == x) return "null";
     else if (x.isPrimitive()) return x.getName();
     else if (x.isArray()) return toStringType(x.getElementType()) + "[]";
     else return x.getBinaryName();
-    
+
   }
-  
+
   private static String toStringVar(final IVariableBinding iVariableBinding) {
     if (null == iVariableBinding) return null;
     ITypeBinding declaringClass = iVariableBinding.getDeclaringClass();
     if (null == declaringClass) return null;
     return declaringClass.getBinaryName() + "::" + iVariableBinding.getName();
   }
-  
+
 }
