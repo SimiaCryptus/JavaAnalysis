@@ -23,11 +23,7 @@ import org.apache.maven.project.DependencyResolutionException;
 import org.apache.maven.project.ProjectBuildingException;
 import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +39,7 @@ import java.util.TreeMap;
  */
 public class Javadoc {
   private static final Logger logger = LoggerFactory.getLogger(Javadoc.class);
-  
+
   /**
    * Load model summary hash map.
    *
@@ -55,9 +51,9 @@ public class Javadoc {
     } catch (IOException | PlexusContainerException | DependencyResolutionException | ProjectBuildingException | ComponentLookupException e) {
       throw new RuntimeException(e);
     }
-    
+
   }
-  
+
   /**
    * Load model summary hash map.
    *
@@ -93,8 +89,7 @@ public class Javadoc {
             String identifier = declaration.getName().getIdentifier();
             if (identifier.startsWith("set") && identifier.length() > 3 && identifier.substring(3, 4) != identifier.substring(3, 4).toLowerCase() && declaration.parameters().size() == 1) {
               identifier = identifier.substring(3, 4).toLowerCase() + identifier.substring(4);
-            }
-            else {
+            } else {
               return;
             }
             if (null != methodJavadoc) classData.put(identifier, Javadoc.toString(methodJavadoc));
@@ -106,7 +101,7 @@ public class Javadoc {
     });
     return projectData;
   }
-  
+
   /**
    * To string string.
    *
@@ -125,9 +120,9 @@ public class Javadoc {
     return Arrays.stream(trim.split("\n")).map(x -> {
       return x.trim().replaceAll("^/?\\** ?", "").replaceAll("\\**/$", "");
     })
-      .filter(x -> !x.isEmpty())
-      .filter(x -> !x.trim().startsWith("@"))
-      .reduce((a, b) -> a + "\n" + b).get();
+        .filter(x -> !x.isEmpty())
+        .filter(x -> !x.trim().startsWith("@"))
+        .reduce((a, b) -> a + "\n" + b).get();
   }
-  
+
 }

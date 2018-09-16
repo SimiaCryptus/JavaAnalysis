@@ -26,14 +26,7 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
-import org.apache.maven.project.DefaultDependencyResolutionRequest;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
-import org.apache.maven.project.DependencyResolutionException;
-import org.apache.maven.project.DependencyResolutionResult;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuilder;
-import org.apache.maven.project.ProjectBuildingException;
-import org.apache.maven.project.ProjectDependenciesResolver;
+import org.apache.maven.project.*;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.codehaus.plexus.ContainerConfiguration;
 import org.codehaus.plexus.DefaultContainerConfiguration;
@@ -50,15 +43,7 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ResolutionErrorPolicy;
 import org.eclipse.aether.util.repository.SimpleResolutionErrorPolicy;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.FileASTRequestor;
-import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.slf4j.Logger;
@@ -67,11 +52,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -96,7 +77,7 @@ public class SimpleMavenProject {
    * The absolute file path of the project root as passed to the constructor
    */
   public final String projectRoot;
-  
+
   /**
    * Instantiates a new Simple maven project.
    *
@@ -116,7 +97,7 @@ public class SimpleMavenProject {
     this.session = getSession(repositoryLocation, false, configProps, container);
     this.project = getMavenProject(container, session);
   }
-  
+
   /**
    * A sample CLI application which loads a maven java project and prints out the parse tree.
    *
@@ -141,7 +122,7 @@ public class SimpleMavenProject {
       ast.accept(new ASTVisitor() {
         String indent = "  ";
         Stack<ASTNode> stack = new Stack<>();
-        
+
         @Override
         public void preVisit(final ASTNode node) {
           indent += "  ";
@@ -151,35 +132,32 @@ public class SimpleMavenProject {
             String bindingString;
             if (binding == null) {
               bindingString = "???";
-            }
-            else if (binding instanceof ITypeBinding) {
+            } else if (binding instanceof ITypeBinding) {
               bindingString = ((ITypeBinding) binding).getBinaryName();
-            }
-            else {
+            } else {
               bindingString = binding.toString();
             }
             logger.info(String.format("  %s%s%s = %s (%s: %s)", node.getStartPosition(), indent,
-              node.getClass().getSimpleName(), name.getFullyQualifiedName(),
-              null == binding ? null : binding.getClass().getSimpleName(), bindingString));
-          }
-          else {
+                node.getClass().getSimpleName(), name.getFullyQualifiedName(),
+                null == binding ? null : binding.getClass().getSimpleName(), bindingString));
+          } else {
             logger.info(String.format("  %s%s%s", node.getStartPosition(), indent, node.getClass().getSimpleName()));
           }
           stack.push(node);
         }
-        
+
         @Override
         public void postVisit(final ASTNode node) {
           if (node != stack.pop()) throw new IllegalStateException();
           if (indent.length() < 2) throw new IllegalStateException();
           indent = indent.substring(2);
         }
-        
+
       });
-      
+
     });
   }
-  
+
   /**
    * Load project hash map.
    *
@@ -193,7 +171,7 @@ public class SimpleMavenProject {
   public static HashMap<String, CompilationUnit> loadProject() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     return loadProject(new File(".").getAbsolutePath());
   }
-  
+
   /**
    * Load project hash map.
    *
@@ -212,8 +190,8 @@ public class SimpleMavenProject {
     });
     return mavenProject.parse();
   }
-  
-  
+
+
   /**
    * Parses all files in the project.
    *
@@ -232,27 +210,27 @@ public class SimpleMavenProject {
     astParser.setCompilerOptions(compilerOptions);
     String[] classpathEntries = resolve().getDependencies().stream().map(x -> x.getArtifact().getFile().getAbsolutePath()).toArray(i -> new String[i]);
     String[] sourcepathEntries = Stream.concat(
-      project.getTestCompileSourceRoots().stream(),
-      project.getCompileSourceRoots().stream()
+        project.getTestCompileSourceRoots().stream(),
+        project.getCompileSourceRoots().stream()
     ).toArray(i -> new String[i]);
     astParser.setEnvironment(classpathEntries, sourcepathEntries, null, true);
     HashMap<String, CompilationUnit> results = new HashMap<>();
     astParser.createASTs(
-      FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new String[i]),
-      null,
-      new String[]{},
-      new FileASTRequestor() {
-        @Override
-        public void acceptAST(final String source, final CompilationUnit ast) {
-          results.put(source, ast);
-        }
-      },
-      new NullProgressMonitor()
+        FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new String[i]),
+        null,
+        new String[]{},
+        new FileASTRequestor() {
+          @Override
+          public void acceptAST(final String source, final CompilationUnit ast) {
+            results.put(source, ast);
+          }
+        },
+        new NullProgressMonitor()
     );
-    
+
     return results;
   }
-  
+
   /**
    * Resolves Maven dependencies
    *
@@ -263,13 +241,13 @@ public class SimpleMavenProject {
   public DependencyResolutionResult resolve() throws org.codehaus.plexus.component.repository.exception.ComponentLookupException, DependencyResolutionException {
     return container.lookup(ProjectDependenciesResolver.class).resolve(new DefaultDependencyResolutionRequest().setRepositorySession(session).setMavenProject(project));
   }
-  
+
   private MavenProject getMavenProject(final DefaultPlexusContainer container, final DefaultRepositorySystemSession session) throws ProjectBuildingException, org.codehaus.plexus.component.repository.exception.ComponentLookupException {
     DefaultProjectBuildingRequest request = new DefaultProjectBuildingRequest();
     request.setRepositorySession(session);
     return container.lookup(ProjectBuilder.class).build(new File(projectRoot, "pom.xml"), request).getProject();
   }
-  
+
   @Nonnull
   private DefaultRepositorySystemSession getSession(final File repositoryLocation, final boolean isOffline, final Map<Object, Object> configProps, final DefaultPlexusContainer container) throws org.codehaus.plexus.component.repository.exception.ComponentLookupException {
     DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
@@ -282,7 +260,7 @@ public class SimpleMavenProject {
     session.setLocalRepositoryManager(container.lookup(DefaultRepositorySystem.class).newLocalRepositoryManager(session, new LocalRepository(repositoryLocation)));
     return session;
   }
-  
+
   @Nonnull
   private DefaultPlexusContainer getPlexusContainer(final File repositoryLocation) throws IOException, PlexusContainerException {
     DefaultRepositoryLayout defaultRepositoryLayout = new DefaultRepositoryLayout();
@@ -291,9 +269,9 @@ public class SimpleMavenProject {
     ArtifactRepository repository = new MavenArtifactRepository("central", url, defaultRepositoryLayout, repositoryPolicy, repositoryPolicy);
     ClassWorld classWorld = new ClassWorld("plexus.core", Thread.currentThread().getContextClassLoader());
     ContainerConfiguration configuration = new DefaultContainerConfiguration()
-      .setClassWorld(classWorld).setRealm(classWorld.getClassRealm(null))
-      .setClassPathScanning("index").setAutoWiring(true).setJSR250Lifecycle(true).setName("maven");
+        .setClassWorld(classWorld).setRealm(classWorld.getClassRealm(null))
+        .setClassPathScanning("index").setAutoWiring(true).setJSR250Lifecycle(true).setName("maven");
     return new DefaultPlexusContainer(configuration, new BasicModule(repository));
   }
-  
+
 }
