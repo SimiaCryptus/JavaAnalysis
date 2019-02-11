@@ -31,12 +31,12 @@
     <artifactId>java-analysis</artifactId>
     <description>Java 8 Static Code Analysis</description>
     <scm>
-        <url>https://github.com/acharneski/JavaAnalysis/</url>
-        <connection>scm:git:git@github.com:acharneski/JavaAnalysis.git</connection>
+        <url>https://github.com/simiacryptus/JavaAnalysis/</url>
+        <connection>scm:git:git@github.com:simiacryptus/JavaAnalysis.git</connection>
     </scm>
 
     <properties>
-        <github.project>mindseye</github.project>
+        <github.project>JavaAnalysis</github.project>
         <github.path></github.path>
         <github.global.userName></github.global.userName>
         <github.global.oauth2Token></github.global.oauth2Token>
@@ -44,7 +44,7 @@
     <distributionManagement>
         <site>
             <id>github</id>
-            <url>https://acharneski.github.io/JavaAnalysis</url>
+            <url>https://simiacryptus.github.io/JavaAnalysis</url>
         </site>
     </distributionManagement>
 
