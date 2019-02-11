@@ -30,6 +30,7 @@
 
     <artifactId>java-analysis</artifactId>
     <description>Java 8 Static Code Analysis</description>
+    <url>https://simiacryptus.github.io/${github.project}/${github.path}</url>
     <scm>
         <url>https://github.com/simiacryptus/JavaAnalysis/</url>
         <connection>scm:git:git@github.com:simiacryptus/JavaAnalysis.git</connection>
