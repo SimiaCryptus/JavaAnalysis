@@ -34,17 +34,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
 
-/**
- * Analyzes a project based on class member dependencies
- */
 public class Javadoc {
   private static final Logger logger = LoggerFactory.getLogger(Javadoc.class);
 
-  /**
-   * Load model summary hash map.
-   *
-   * @return the hash map
-   */
   public static HashMap<String, TreeMap<String, String>> loadModelSummary() {
     try {
       return loadModelSummary(SimpleMavenProject.loadProject());
@@ -54,12 +46,6 @@ public class Javadoc {
 
   }
 
-  /**
-   * Load model summary hash map.
-   *
-   * @param project the project
-   * @return the hash map
-   */
   @Nonnull
   public static HashMap<String, TreeMap<String, String>> loadModelSummary(final HashMap<String, CompilationUnit> project) {
     HashMap<String, TreeMap<String, String>> projectData = new HashMap<>();
@@ -102,12 +88,6 @@ public class Javadoc {
     return projectData;
   }
 
-  /**
-   * To string string.
-   *
-   * @param javadoc the javadoc
-   * @return the string
-   */
   @Nonnull
   public static String toString(final org.eclipse.jdt.core.dom.Javadoc javadoc) {
     String trim = javadoc.toString().trim();

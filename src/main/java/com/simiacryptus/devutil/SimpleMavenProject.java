@@ -55,38 +55,14 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
-/**
- * Provides a simple api for accessing the document object model of a Maven Java project
- */
 public class SimpleMavenProject {
   private static final File repositoryLocation = new File(System.getProperty("user.home"), ".m2/repository");
   private static final Logger logger = LoggerFactory.getLogger(SimpleMavenProject.class);
-  /**
-   * The initialized Maven component container - Plexus Dependency Injection object
-   */
   public final DefaultPlexusContainer container;
-  /**
-   * The initialized Maven session
-   */
   public final DefaultRepositorySystemSession session;
-  /**
-   * The initialized Maven project object
-   */
   public final MavenProject project;
-  /**
-   * The absolute file path of the project root as passed to the constructor
-   */
   public final String projectRoot;
 
-  /**
-   * Instantiates a new Simple maven project.
-   *
-   * @param projectRoot the project root
-   * @throws IOException              the io exception
-   * @throws PlexusContainerException the plexus container exception
-   * @throws ComponentLookupException the component lookup exception
-   * @throws ProjectBuildingException the project building exception
-   */
   public SimpleMavenProject(final String projectRoot) throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException {
     this.projectRoot = projectRoot;
     Map<Object, Object> configProps = new LinkedHashMap<>();
@@ -98,12 +74,6 @@ public class SimpleMavenProject {
     this.project = getMavenProject(container, session);
   }
 
-  /**
-   * A sample CLI application which loads a maven java project and prints out the parse tree.
-   *
-   * @param args the input arguments
-   * @throws Exception the exception
-   */
   public static void main(String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
@@ -158,31 +128,10 @@ public class SimpleMavenProject {
     });
   }
 
-  /**
-   * Load project hash map.
-   *
-   * @return the hash map
-   * @throws IOException                   the io exception
-   * @throws PlexusContainerException      the plexus container exception
-   * @throws ComponentLookupException      the component lookup exception
-   * @throws ProjectBuildingException      the project building exception
-   * @throws DependencyResolutionException the dependency resolution exception
-   */
   public static HashMap<String, CompilationUnit> loadProject() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     return loadProject(new File(".").getAbsolutePath());
   }
 
-  /**
-   * Load project hash map.
-   *
-   * @param root the root
-   * @return the hash map
-   * @throws IOException                   the io exception
-   * @throws PlexusContainerException      the plexus container exception
-   * @throws ComponentLookupException      the component lookup exception
-   * @throws ProjectBuildingException      the project building exception
-   * @throws DependencyResolutionException the dependency resolution exception
-   */
   public static HashMap<String, CompilationUnit> loadProject(final String root) throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
     mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
@@ -192,13 +141,6 @@ public class SimpleMavenProject {
   }
 
 
-  /**
-   * Parses all files in the project.
-   *
-   * @return the hash map
-   * @throws ComponentLookupException      the component lookup exception
-   * @throws DependencyResolutionException the dependency resolution exception
-   */
   public final HashMap<String, CompilationUnit> parse() throws ComponentLookupException, DependencyResolutionException {
     final String root = projectRoot;
     ASTParser astParser = ASTParser.newParser(AST.JLS9);
@@ -231,13 +173,6 @@ public class SimpleMavenProject {
     return results;
   }
 
-  /**
-   * Resolves Maven dependencies
-   *
-   * @return the dependency resolution result
-   * @throws ComponentLookupException      the component lookup exception
-   * @throws DependencyResolutionException the dependency resolution exception
-   */
   public DependencyResolutionResult resolve() throws org.codehaus.plexus.component.repository.exception.ComponentLookupException, DependencyResolutionException {
     return container.lookup(ProjectDependenciesResolver.class).resolve(new DefaultDependencyResolutionRequest().setRepositorySession(session).setMavenProject(project));
   }
