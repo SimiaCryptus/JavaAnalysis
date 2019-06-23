@@ -28,18 +28,9 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Stack;
 
-/**
- * Analyzes a project based on class member dependencies
- */
 public class DependencyScanner {
   private static final Logger logger = LoggerFactory.getLogger(DependencyScanner.class);
 
-  /**
-   * A sample CLI application which loads a maven java project and prints out the parse tree.
-   *
-   * @param args the input arguments
-   * @throws Exception the exception
-   */
   public static void main(String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     SimpleMavenProject.loadProject(root).forEach((file, ast) -> {
@@ -48,11 +39,6 @@ public class DependencyScanner {
     });
   }
 
-  /**
-   * Log tree.
-   *
-   * @param ast the ast
-   */
   public static void logTree(final CompilationUnit ast) {
     Arrays.stream(ast.getProblems()).forEach(problem -> {
       logger.warn("  ERR: " + problem.getMessage());
