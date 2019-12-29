@@ -19,8 +19,8 @@
 
 package com.simiacryptus.devutil;
 
-import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Javadoc;
+import org.eclipse.jdt.core.dom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
