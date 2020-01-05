@@ -37,6 +37,7 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.eclipse.aether.ConfigurationProperties;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.internal.impl.DefaultRepositorySystem;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
@@ -77,7 +78,7 @@ public class SimpleMavenProject {
   public static void main(String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
-    mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
+    mavenProject.resolve().getDependencies().forEach((Dependency dependency) -> {
       logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
     });
     HashMap<String, CompilationUnit> parsedFiles = mavenProject.parse();
@@ -134,7 +135,7 @@ public class SimpleMavenProject {
 
   public static HashMap<String, CompilationUnit> loadProject(final String root) throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
-    mavenProject.resolve().getDependencies().forEach((org.eclipse.aether.graph.Dependency dependency) -> {
+    mavenProject.resolve().getDependencies().forEach((Dependency dependency) -> {
       logger.info(String.format("Dependency: %s (%s)", dependency.getArtifact().getFile().getAbsolutePath(), dependency));
     });
     return mavenProject.parse();
@@ -173,18 +174,18 @@ public class SimpleMavenProject {
     return results;
   }
 
-  public DependencyResolutionResult resolve() throws org.codehaus.plexus.component.repository.exception.ComponentLookupException, DependencyResolutionException {
+  public DependencyResolutionResult resolve() throws ComponentLookupException, DependencyResolutionException {
     return container.lookup(ProjectDependenciesResolver.class).resolve(new DefaultDependencyResolutionRequest().setRepositorySession(session).setMavenProject(project));
   }
 
-  private MavenProject getMavenProject(final DefaultPlexusContainer container, final DefaultRepositorySystemSession session) throws ProjectBuildingException, org.codehaus.plexus.component.repository.exception.ComponentLookupException {
+  private MavenProject getMavenProject(final DefaultPlexusContainer container, final DefaultRepositorySystemSession session) throws ProjectBuildingException, ComponentLookupException {
     DefaultProjectBuildingRequest request = new DefaultProjectBuildingRequest();
     request.setRepositorySession(session);
     return container.lookup(ProjectBuilder.class).build(new File(projectRoot, "pom.xml"), request).getProject();
   }
 
   @Nonnull
-  private DefaultRepositorySystemSession getSession(final File repositoryLocation, final boolean isOffline, final Map<Object, Object> configProps, final DefaultPlexusContainer container) throws org.codehaus.plexus.component.repository.exception.ComponentLookupException {
+  private DefaultRepositorySystemSession getSession(final File repositoryLocation, final boolean isOffline, final Map<Object, Object> configProps, final DefaultPlexusContainer container) throws ComponentLookupException {
     DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
     session.setConfigProperties(configProps);
     session.setCache(new DefaultRepositoryCache());
