@@ -37,22 +37,23 @@ import java.util.TreeMap;
 public class Javadoc {
   private static final Logger logger = LoggerFactory.getLogger(Javadoc.class);
 
+  @Nonnull
   public static HashMap<String, TreeMap<String, String>> loadModelSummary() {
     try {
       return loadModelSummary(SimpleMavenProject.loadProject());
-    } catch (IOException | PlexusContainerException | DependencyResolutionException | ProjectBuildingException | ComponentLookupException e) {
+    } catch (@Nonnull IOException | PlexusContainerException | DependencyResolutionException | ProjectBuildingException | ComponentLookupException e) {
       throw new RuntimeException(e);
     }
 
   }
 
   @Nonnull
-  public static HashMap<String, TreeMap<String, String>> loadModelSummary(final HashMap<String, CompilationUnit> project) {
+  public static HashMap<String, TreeMap<String, String>> loadModelSummary(@Nonnull final HashMap<String, CompilationUnit> project) {
     HashMap<String, TreeMap<String, String>> projectData = new HashMap<>();
     project.forEach((file, ast) -> {
       ast.accept(new ASTVisitor() {
         @Override
-        public boolean visit(final TypeDeclaration node) {
+        public boolean visit(@Nonnull final TypeDeclaration node) {
           TreeMap<String, String> classData = new TreeMap<>();
           org.eclipse.jdt.core.dom.Javadoc javadoc = node.getJavadoc();
           if (null != javadoc) {
@@ -89,7 +90,7 @@ public class Javadoc {
   }
 
   @Nonnull
-  public static String toString(final org.eclipse.jdt.core.dom.Javadoc javadoc) {
+  public static String toString(@Nonnull final org.eclipse.jdt.core.dom.Javadoc javadoc) {
     String trim = javadoc.toString().trim();
     if (!trim.startsWith("/*")) {
       throw new IllegalArgumentException(trim);

@@ -24,6 +24,8 @@ import org.eclipse.jdt.core.dom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Stack;
@@ -31,7 +33,7 @@ import java.util.Stack;
 public class DependencyScanner {
   private static final Logger logger = LoggerFactory.getLogger(DependencyScanner.class);
 
-  public static void main(String[] args) throws Exception {
+  public static void main(@Nonnull String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     SimpleMavenProject.loadProject(root).forEach((file, ast) -> {
       logger.info("File: " + file);
@@ -39,7 +41,7 @@ public class DependencyScanner {
     });
   }
 
-  public static void logTree(final CompilationUnit ast) {
+  public static void logTree(@Nonnull final CompilationUnit ast) {
     Arrays.stream(ast.getProblems()).forEach(problem -> {
       logger.warn("  ERR: " + problem.getMessage());
     });
@@ -48,7 +50,9 @@ public class DependencyScanner {
     });
     ast.accept(new ASTVisitor() {
       public boolean useJavaDoc = false;
+      @Nonnull
       String indent = "  ";
+      @Nonnull
       Stack<ASTNode> stack = new Stack<>();
       String currentCodeContext = "";
 
@@ -83,7 +87,7 @@ public class DependencyScanner {
       }
 
       @Override
-      public boolean visit(final SimpleName node) {
+      public boolean visit(@Nonnull final SimpleName node) {
         IBinding binding = node.resolveBinding();
         if (binding instanceof IMethodBinding) {
           if (!(node.getParent() instanceof MethodDeclaration)) {
@@ -99,7 +103,7 @@ public class DependencyScanner {
       }
 
       @Override
-      public boolean visit(final ConstructorInvocation node) {
+      public boolean visit(@Nonnull final ConstructorInvocation node) {
         IBinding binding = node.resolveConstructorBinding();
         String ref = toStringMethod(((IMethodBinding) binding));
         logger.info(String.format("   Ref %s", ref));
@@ -107,7 +111,7 @@ public class DependencyScanner {
       }
 
       @Override
-      public boolean visit(final SuperConstructorInvocation node) {
+      public boolean visit(@Nonnull final SuperConstructorInvocation node) {
         IMethodBinding binding = node.resolveConstructorBinding();
         String ref = toStringMethod(binding);
         logger.info(String.format("   Ref %s", ref));
@@ -115,7 +119,7 @@ public class DependencyScanner {
       }
 
       @Override
-      public boolean visit(final VariableDeclarationFragment node) {
+      public boolean visit(@Nonnull final VariableDeclarationFragment node) {
         Optional<ASTNode> fieldDeclaration = stack.stream().filter(x -> x instanceof FieldDeclaration).findAny();
         if (fieldDeclaration.isPresent()) {
           Javadoc javadoc = ((FieldDeclaration) fieldDeclaration.get()).getJavadoc();
@@ -133,7 +137,7 @@ public class DependencyScanner {
       }
 
       @Override
-      public boolean visit(final MethodDeclaration node) {
+      public boolean visit(@Nonnull final MethodDeclaration node) {
         Javadoc javadoc = node.getJavadoc();
         IMethodBinding methodBinding = node.resolveBinding();
         currentCodeContext = toStringMethod(methodBinding);
@@ -146,7 +150,7 @@ public class DependencyScanner {
   }
 
 
-  private static String toStringMethod(final IMethodBinding methodBinding) {
+  private static String toStringMethod(@Nullable final IMethodBinding methodBinding) {
     final String symbolStr;
     if (null != methodBinding) {
       ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();
@@ -160,7 +164,7 @@ public class DependencyScanner {
   }
 
 
-  private static String toStringType(final ITypeBinding x) {
+  private static String toStringType(@Nullable final ITypeBinding x) {
     if (null == x) return "null";
     else if (x.isPrimitive()) return x.getName();
     else if (x.isArray()) return toStringType(x.getElementType()) + "[]";
@@ -168,7 +172,8 @@ public class DependencyScanner {
 
   }
 
-  private static String toStringVar(final IVariableBinding iVariableBinding) {
+  @Nullable
+  private static String toStringVar(@Nullable final IVariableBinding iVariableBinding) {
     if (null == iVariableBinding) return null;
     ITypeBinding declaringClass = iVariableBinding.getDeclaringClass();
     if (null == declaringClass) return null;

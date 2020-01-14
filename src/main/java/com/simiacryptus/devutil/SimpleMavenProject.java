@@ -59,7 +59,9 @@ import java.util.stream.Stream;
 public class SimpleMavenProject {
   private static final File repositoryLocation = new File(System.getProperty("user.home"), ".m2/repository");
   private static final Logger logger = LoggerFactory.getLogger(SimpleMavenProject.class);
+  @Nonnull
   public final DefaultPlexusContainer container;
+  @Nonnull
   public final DefaultRepositorySystemSession session;
   public final MavenProject project;
   public final String projectRoot;
@@ -75,7 +77,7 @@ public class SimpleMavenProject {
     this.project = getMavenProject(container, session);
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(@Nonnull String[] args) throws Exception {
     String root = args.length == 0 ? "H:\\SimiaCryptus\\MindsEye" : args[0];
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
     mavenProject.resolve().getDependencies().forEach((Dependency dependency) -> {
@@ -91,7 +93,9 @@ public class SimpleMavenProject {
         logger.info("  MSG: " + problem.getMessage());
       });
       ast.accept(new ASTVisitor() {
+        @Nonnull
         String indent = "  ";
+        @Nonnull
         Stack<ASTNode> stack = new Stack<>();
 
         @Override
@@ -129,10 +133,12 @@ public class SimpleMavenProject {
     });
   }
 
+  @Nonnull
   public static HashMap<String, CompilationUnit> loadProject() throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     return loadProject(new File(".").getAbsolutePath());
   }
 
+  @Nonnull
   public static HashMap<String, CompilationUnit> loadProject(final String root) throws IOException, PlexusContainerException, ComponentLookupException, ProjectBuildingException, DependencyResolutionException {
     SimpleMavenProject mavenProject = new SimpleMavenProject(root);
     mavenProject.resolve().getDependencies().forEach((Dependency dependency) -> {
@@ -142,6 +148,7 @@ public class SimpleMavenProject {
   }
 
 
+  @Nonnull
   public final HashMap<String, CompilationUnit> parse() throws ComponentLookupException, DependencyResolutionException {
     final String root = projectRoot;
     ASTParser astParser = ASTParser.newParser(AST.JLS9);
@@ -178,14 +185,14 @@ public class SimpleMavenProject {
     return container.lookup(ProjectDependenciesResolver.class).resolve(new DefaultDependencyResolutionRequest().setRepositorySession(session).setMavenProject(project));
   }
 
-  private MavenProject getMavenProject(final DefaultPlexusContainer container, final DefaultRepositorySystemSession session) throws ProjectBuildingException, ComponentLookupException {
+  private MavenProject getMavenProject(@Nonnull final DefaultPlexusContainer container, final DefaultRepositorySystemSession session) throws ProjectBuildingException, ComponentLookupException {
     DefaultProjectBuildingRequest request = new DefaultProjectBuildingRequest();
     request.setRepositorySession(session);
     return container.lookup(ProjectBuilder.class).build(new File(projectRoot, "pom.xml"), request).getProject();
   }
 
   @Nonnull
-  private DefaultRepositorySystemSession getSession(final File repositoryLocation, final boolean isOffline, final Map<Object, Object> configProps, final DefaultPlexusContainer container) throws ComponentLookupException {
+  private DefaultRepositorySystemSession getSession(final File repositoryLocation, final boolean isOffline, final Map<Object, Object> configProps, @Nonnull final DefaultPlexusContainer container) throws ComponentLookupException {
     DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
     session.setConfigProperties(configProps);
     session.setCache(new DefaultRepositoryCache());
@@ -198,7 +205,7 @@ public class SimpleMavenProject {
   }
 
   @Nonnull
-  private DefaultPlexusContainer getPlexusContainer(final File repositoryLocation) throws IOException, PlexusContainerException {
+  private DefaultPlexusContainer getPlexusContainer(@Nonnull final File repositoryLocation) throws IOException, PlexusContainerException {
     DefaultRepositoryLayout defaultRepositoryLayout = new DefaultRepositoryLayout();
     ArtifactRepositoryPolicy repositoryPolicy = new ArtifactRepositoryPolicy(true, ArtifactRepositoryPolicy.UPDATE_POLICY_NEVER, ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN);
     String url = "file://" + repositoryLocation.getCanonicalPath();

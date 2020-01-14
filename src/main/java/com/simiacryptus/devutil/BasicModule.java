@@ -38,6 +38,8 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -52,40 +54,40 @@ class BasicModule extends AbstractModule {
   protected void configure() {
     this.bind(ILoggerFactory.class).toInstance(LoggerFactory.getILoggerFactory());
     this.bind(RepositorySystem.class).toInstance(new RepositorySystem() {
+      @Nullable
       @Override
       public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String packaging) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public Artifact createArtifact(final String groupId, final String artifactId, final String version, final String scope, final String type) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public Artifact createProjectArtifact(final String groupId, final String artifactId, final String version) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public Artifact createArtifactWithClassifier(final String groupId, final String artifactId, final String version, final String type, final String classifier) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public Artifact createPluginArtifact(final Plugin plugin) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public Artifact createDependencyArtifact(final Dependency dependency) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
       @Override
@@ -93,39 +95,40 @@ class BasicModule extends AbstractModule {
         return repository;
       }
 
+      @Nullable
       @Override
       public ArtifactRepository createDefaultRemoteRepository() {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public ArtifactRepository createDefaultLocalRepository() {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public ArtifactRepository createLocalRepository(final File localRepository) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nullable
       @Override
       public ArtifactRepository createArtifactRepository(final String id, final String url1, final ArtifactRepositoryLayout repositoryLayout, final ArtifactRepositoryPolicy snapshots, final ArtifactRepositoryPolicy releases) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
+      @Nonnull
       @Override
       public List<ArtifactRepository> getEffectiveRepositories(final List<ArtifactRepository> repositories) {
         return Arrays.asList(repository);
       }
 
+      @Nullable
       @Override
       public Mirror getMirror(final ArtifactRepository repository1, final List<Mirror> mirrors) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
       @Override
@@ -157,10 +160,10 @@ class BasicModule extends AbstractModule {
 
       }
 
+      @Nullable
       @Override
       public ArtifactResolutionResult resolve(final ArtifactResolutionRequest request) {
-        if (0 < 1) throw new RuntimeException("Not Implemented");
-        return null;
+        throw new RuntimeException("Not Implemented");
       }
 
       @Override
