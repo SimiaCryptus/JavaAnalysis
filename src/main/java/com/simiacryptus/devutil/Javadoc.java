@@ -44,7 +44,6 @@ public class Javadoc {
     } catch (@Nonnull IOException | PlexusContainerException | DependencyResolutionException | ProjectBuildingException | ComponentLookupException e) {
       throw new RuntimeException(e);
     }
-
   }
 
   @Nonnull

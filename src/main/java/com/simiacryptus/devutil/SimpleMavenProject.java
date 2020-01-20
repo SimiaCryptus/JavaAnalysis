@@ -127,9 +127,7 @@ public class SimpleMavenProject {
           if (indent.length() < 2) throw new IllegalStateException();
           indent = indent.substring(2);
         }
-
       });
-
     });
   }
 

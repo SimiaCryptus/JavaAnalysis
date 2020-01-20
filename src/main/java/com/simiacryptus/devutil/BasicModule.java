@@ -137,27 +137,22 @@ class BasicModule extends AbstractModule {
 
       @Override
       public void injectProxy(final List<ArtifactRepository> repositories, final List<Proxy> proxies) {
-
       }
 
       @Override
       public void injectAuthentication(final List<ArtifactRepository> repositories, final List<Server> servers) {
-
       }
 
       @Override
       public void injectMirror(final RepositorySystemSession session, final List<ArtifactRepository> repositories) {
-
       }
 
       @Override
       public void injectProxy(final RepositorySystemSession session, final List<ArtifactRepository> repositories) {
-
       }
 
       @Override
       public void injectAuthentication(final RepositorySystemSession session, final List<ArtifactRepository> repositories) {
-
       }
 
       @Nullable
@@ -168,12 +163,10 @@ class BasicModule extends AbstractModule {
 
       @Override
       public void publish(final ArtifactRepository repository1, final File source, final String remotePath, final ArtifactTransferListener transferListener) {
-
       }
 
       @Override
       public void retrieve(final ArtifactRepository repository1, final File destination, final String remotePath, final ArtifactTransferListener transferListener) {
-
       }
     });
   }

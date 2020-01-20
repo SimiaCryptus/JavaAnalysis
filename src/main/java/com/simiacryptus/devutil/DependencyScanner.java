@@ -145,7 +145,6 @@ public class DependencyScanner {
             (!useJavaDoc || null == javadoc ? node : javadoc).toString().replaceAll("\n", "\n    ").trim()));
         return super.visit(node);
       }
-
     });
   }
 
@@ -169,7 +168,6 @@ public class DependencyScanner {
     else if (x.isPrimitive()) return x.getName();
     else if (x.isArray()) return toStringType(x.getElementType()) + "[]";
     else return x.getBinaryName();
-
   }
 
   @Nullable
