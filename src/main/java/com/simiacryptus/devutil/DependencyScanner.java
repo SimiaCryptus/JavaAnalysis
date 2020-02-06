@@ -91,7 +91,7 @@ public class DependencyScanner {
         IBinding binding = node.resolveBinding();
         if (binding instanceof IMethodBinding) {
           if (!(node.getParent() instanceof MethodDeclaration)) {
-            String ref = toStringMethod(((IMethodBinding) binding));
+            String ref = toStringMethod((IMethodBinding) binding);
             logger.info(String.format("   Ref %s", ref));
           }
         } else if (binding instanceof IVariableBinding) {
@@ -105,7 +105,7 @@ public class DependencyScanner {
       @Override
       public boolean visit(@Nonnull final ConstructorInvocation node) {
         IBinding binding = node.resolveConstructorBinding();
-        String ref = toStringMethod(((IMethodBinding) binding));
+        String ref = toStringMethod((IMethodBinding) binding);
         logger.info(String.format("   Ref %s", ref));
         return super.visit(node);
       }
