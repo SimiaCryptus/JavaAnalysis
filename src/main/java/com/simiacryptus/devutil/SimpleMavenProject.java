@@ -148,7 +148,6 @@ public class SimpleMavenProject {
 
   @Nonnull
   public final HashMap<String, CompilationUnit> parse() throws ComponentLookupException, DependencyResolutionException {
-    final String root = projectRoot;
     ASTParser astParser = ASTParser.newParser(AST.JLS9);
     astParser.setKind(ASTParser.K_EXPRESSION);
     astParser.setResolveBindings(true);
@@ -164,7 +163,7 @@ public class SimpleMavenProject {
     astParser.setEnvironment(classpathEntries, sourcepathEntries, null, true);
     HashMap<String, CompilationUnit> results = new HashMap<>();
     astParser.createASTs(
-        FileUtils.listFiles(new File(root), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new String[i]),
+        FileUtils.listFiles(new File(projectRoot), new String[]{"java"}, true).stream().map(x -> x.getAbsolutePath()).toArray(i -> new String[i]),
         null,
         new String[]{},
         new FileASTRequestor() {

@@ -18,8 +18,9 @@ java-analysis.iml
 # Package Files #
 *.rar
 target/
-target/
 *.tar.gz
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 *.war
 *.zip
+*.hprof
+
