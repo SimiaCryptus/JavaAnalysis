@@ -89,7 +89,7 @@ public class Javadoc {
   }
 
   @Nonnull
-  public static String toString(@Nonnull final org.eclipse.jdt.core.dom.Javadoc javadoc) {
+  public static String toString(final org.eclipse.jdt.core.dom.Javadoc javadoc) {
     String trim = javadoc.toString().trim();
     if (!trim.startsWith("/*")) {
       throw new IllegalArgumentException(trim);
