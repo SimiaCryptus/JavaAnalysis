@@ -94,6 +94,7 @@
     <url>http://code.simiacrypt.us/release/${project.version}/java-analysis</url>
     <distributionManagement>
         <site>
+            <id>simiacryptus</id>
             <url>s3://code.simiacrypt.us/release/${project.version}/java-analysis</url>
         </site>
     </distributionManagement>
